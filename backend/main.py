@@ -3,8 +3,9 @@ import os
 import urllib.request
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Import Member B's real pipeline logic
+# Import Member B's real pipeline logic and teammate's WhatsApp dispatcher
 from agent_pipeline import process_audio_call
+from twilio_whatsapp_dispatcher import dispatch_alerts
 
 # Simple .env file reader (zero dependencies)
 def load_env():
@@ -46,7 +47,7 @@ def insert_into_supabase(data: dict):
 class SimpleWebhookHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/" or self.path == "/docs":
-            response = {"status": "healthy", "service": "SuRaksha AI Backend (Native + Supabase + Real AI)"}
+            response = {"status": "healthy", "service": "SuRaksha AI Backend (Native + Supabase + Real AI + WhatsApp Alerts)"}
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -64,20 +65,45 @@ class SimpleWebhookHandler(BaseHTTPRequestHandler):
                 data = json.loads(body.decode("utf-8"))
                 audio_url = data.get("audio_url", "https://example.com/default.mp3")
                 target_language = data.get("language", "hi")
+                user_phone = data.get("phone_number") or os.environ.get("MY_PHONE_NUMBER")
+                family_contact = data.get("family_contact")
                 
                 print(f"--- [PIPELINE] Running real transcription & risk engine for: {audio_url}")
                 
-                # Call Member B's actual AI processing engine
+                # 1. Run Member B's actual AI processing engine (STT, Claude Risk, TTS)
                 result = process_audio_call(audio_url, target_language=target_language)
                 
-                # Save structured output to Supabase table ("calls")
+                analysis_info = result.get("analysis", {})
+                risk_level_str = analysis_info.get("risk_level", "LOW").lower()
+                confidence_val = analysis_info.get("risk_score", 0) / 100.0
+                
+                risk_payload = {
+                    "risk": risk_level_str,
+                    "confidence": confidence_val,
+                    "reason": analysis_info.get("reason", "Analysis completed.")
+                }
+                
+                # 2. Save structured output to Supabase table ("calls")
                 db_payload = {
                     "audio_url": audio_url,
                     "transcript": result.get("transcript", ""),
                     "language": result.get("detected_language", "en"),
-                    "risk_score": result.get("analysis", {}).get("risk_score", 0)
+                    "risk_score": analysis_info.get("risk_score", 0)
                 }
                 insert_into_supabase(db_payload)
+                
+                # 3. Trigger Teammate's WhatsApp Dispatcher if phone number is available
+                if user_phone:
+                    print(f"--- [WHATSAPP] Dispatching alerts to user: {user_phone}")
+                    dispatch_alerts(
+                        sender_number=user_phone,
+                        risk_data=risk_payload,
+                        transcript_text=result.get("transcript", ""),
+                        explanation_text=result.get("user_guidance", {}).get("text"),
+                        family_contact=family_contact
+                    )
+                else:
+                    print("--- [WHATSAPP NOTICE] No recipient phone number provided in webhook payload or environment.")
                 
                 response_bytes = json.dumps(result).encode("utf-8")
                 self.send_response(200)

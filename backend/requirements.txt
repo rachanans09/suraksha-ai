@@ -1,0 +1,5 @@
+openai-whisper
+anthropic
+google-cloud-texttospeech
+twilio
+python-dotenv
