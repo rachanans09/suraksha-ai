@@ -111,10 +111,13 @@ class SimpleWebhookHandler(BaseHTTPRequestHandler):
             self.send_response(404)
             self.end_headers()
 
-def run_server(port=8000):
-    server_address = ('127.0.0.1', port)
+# ... keep all your existing code above untouched ...
+
+def run_server():
+    port = int(os.environ.get("PORT", 8000))
+    server_address = ('0.0.0.0', port)
     httpd = HTTPServer(server_address, SimpleWebhookHandler)
-    print(f"SuRaksha AI Native Server with Supabase running on http://127.0.0.1:{port}")
+    print(f"SuRaksha AI Native Server with Supabase running on port {port}")
     httpd.serve_forever()
 
 if __name__ == "__main__":
