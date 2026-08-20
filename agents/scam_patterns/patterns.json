@@ -1,0 +1,7 @@
+[
+  "Caller requests an OTP, PIN, or CVV",
+  "Caller creates false urgency ('account blocked in 10 minutes')",
+  "Caller impersonates a bank official doing an urgent KYC update",
+  "Caller asks to install remote access applications",
+  "Caller impersonates a relative claiming an emergency medical need"
+]
