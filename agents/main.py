@@ -1,5 +1,10 @@
 import sys
 import json
+from dotenv import load_dotenv
+
+# Automatically load environment variables from .env
+load_dotenv()
+
 from transcript_agent import transcript_agent
 from risk_agent import risk_agent
 from explainer_agent import explainer_agent, text_to_speech
