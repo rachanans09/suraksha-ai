@@ -1,8 +1,10 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 import sys
 import json
 from dotenv import load_dotenv
 
-# Automatically load environment variables from .env
 load_dotenv()
 
 from transcript_agent import transcript_agent
