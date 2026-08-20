@@ -2,7 +2,7 @@ import whisper
 
 def transcript_agent(audio_path: str) -> dict:
     model = whisper.load_model("base")
-    result = model.transcribe(audio_path)
+    result = model.transcribe(audio_path, fp16=False)
     
     return {
         "transcript": result["text"],
